@@ -35,6 +35,9 @@ app.use(
   }),
 );
 
+app.get('/',(req,res)=>{
+   res.send("Welcome To Group Chat App");
+})
 
 //DataBase Connetion
 mongoose
