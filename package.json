@@ -2,13 +2,13 @@
   "name": "realtimechatapp",
   "version": "1.0.0",
   "description": "This is BackEnd GraphQL Application For Group Chat",
-  "main": "dist/app.js",
+  "main": "./dist/app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "watch": "babel -w src/ -d dist/",
     "build": "babel src/ -d dist/",
-    "start": "babel -w src/ -d dist/ | node --watch dist",
-    "start:dev": "babel -w src/ -d dist/ | node --watch dist"
+    "start": "node ./dist/app"
+
   },
   "repository": {
     "type": "git",
