@@ -8,11 +8,14 @@ import mongoose from 'mongoose';
 import graphqlSchema from './graphql/schema';
 import graphqlResolver from './graphql/resolvers';
 import auth from './middleware/auth';
-import config from './config';
+import dotenv from 'dotenv';
+import path from 'path';
+dotenv.config({path: path.resolve(__dirname, '../.env')});
 
 
+console.log(process.env.PORT);
 const app = express();
-const subscriptionEndpoint =`ws://localhost:${config.PORT}/subscriptions`;
+const subscriptionEndpoint =`ws://localhost:${process.env.PORT}/subscriptions`;
 
 app.use(bodyParser.graphql());
 app.use(auth);
@@ -42,7 +45,7 @@ app.get('/',(req,res)=>{
 //DataBase Connetion
 mongoose
   .connect(
-    config.MONGO_URI,
+    process.env.MONGO_URI,
     { useUnifiedTopology: true, useNewUrlParser: true, useFindAndModify:false }
   )
   .then(result => {
@@ -55,7 +58,7 @@ mongoose
 const webServer = createServer(app);
 
 //Listening Server On Port
-app.listen(config.PORT, () => {
+app.listen(process.env.PORT, () => {
   // Subscriptions handling:
   new SubscriptionServer({
     execute,
@@ -65,5 +68,5 @@ app.listen(config.PORT, () => {
     server: webServer,
     path: '/subscriptions',
   });
-  console.log(`Running a GraphQL API server at http://localhost:${config.PORT}/graphql`);
+  console.log(`Running a GraphQL API server at http://localhost:${process.env.PORT}/graphql`);
 });
