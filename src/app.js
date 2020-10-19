@@ -14,7 +14,6 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 import expressPlayground from 'graphql-playground-middleware-express';
 
 
-console.log(process.env.PORT);
 const app = express();
 const subscriptionEndpoint = `ws://localhost:${process.env.PORT}/subscriptions`;
 
