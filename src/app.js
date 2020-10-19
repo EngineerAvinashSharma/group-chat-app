@@ -10,12 +10,13 @@ import graphqlResolver from './graphql/resolvers';
 import auth from './middleware/auth';
 import dotenv from 'dotenv';
 import path from 'path';
-dotenv.config({path: path.resolve(__dirname, '../.env')});
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+import expressPlayground from 'graphql-playground-middleware-express';
 
 
 console.log(process.env.PORT);
 const app = express();
-const subscriptionEndpoint =`ws://localhost:${process.env.PORT}/subscriptions`;
+const subscriptionEndpoint = `ws://localhost:${process.env.PORT}/subscriptions`;
 
 app.use(bodyParser.graphql());
 app.use(auth);
@@ -26,27 +27,28 @@ app.use(
     rootValue: graphqlResolver,
     graphiql: true,
     subscriptionEndpoint,
-    customFormatErrorFn(err){
-      if(!err.originalError){
+    customFormatErrorFn(err) {
+      if (!err.originalError) {
         return err;
       }
       const data = err.originalError.data;
       const message = err.message || 'An Error Occured';
-      const code  = err.originalError.code || 500;
-      return {message:message , status: code, data:data};
+      const code = err.originalError.code || 500;
+      return { message: message, status: code, data: data };
     }
   }),
 );
 
-app.get('/',(req,res)=>{
-   res.send("Welcome To Group Chat App");
-})
+app.get('/playground', expressPlayground({
+  endpoint: "/graphql"
+}));
+
 
 //DataBase Connetion
 mongoose
   .connect(
     process.env.MONGO_URI,
-    { useUnifiedTopology: true, useNewUrlParser: true, useFindAndModify:false }
+    { useUnifiedTopology: true, useNewUrlParser: true, useFindAndModify: false }
   )
   .then(result => {
 
@@ -58,7 +60,7 @@ mongoose
 const webServer = createServer(app);
 
 //Listening Server On Port
-app.listen(process.env.PORT, () => {
+webServer.listen(process.env.PORT, () => {
   // Subscriptions handling:
   new SubscriptionServer({
     execute,
