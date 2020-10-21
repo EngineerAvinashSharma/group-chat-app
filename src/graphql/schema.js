@@ -13,15 +13,26 @@ module.exports = buildSchema(`
         member:[User]
         message:[Message]
     }
+    type UserData{
+        name:String
+        email: String
+    }
     type Message{
         _id: ID!
         body:String!
-        sendBy:User!
+        sendBy:UserData!
         groupId:Group!
     }
     type GroupData{
         groups:[Group!]
         totalGroups:Int!
+        messages:MessageData!
+    }
+    type MessageData{
+        messages:[Message!]
+        totalMessages:Int!
+        sendBy:UserData!
+        body:String!
     }
     type AuthData {
         userId:ID!
@@ -42,9 +53,9 @@ module.exports = buildSchema(`
 
     type RootQuery {
         login(email:String!, password:String!): AuthData!,
-        groups(limit:Int!,page:Int!):[Group]
+        groups(limit:Int!,page:Int!):GroupData!
+        group(id: ID!):Group!
         getMessages(groupId:ID!):Group!
-        messages:[Message]
     }
 
     type RootMutation {
@@ -52,14 +63,14 @@ module.exports = buildSchema(`
         createGroup(groupInput: GroupInputData): Group!
         joinGroup(groupInput: GroupInputData): Group!
         sendMessage(messageInput:MessageInputData):Message!
-        deleteMessage(id:String!):Boolean!
+        deleteMessage(id:String!,groupId: String!):Boolean!
         userTyping(sendby: String!, groupId: String!): Boolean!
     }
     type RootSubscription{
-          newMessage(sendBy:ID!): Message!
-          userTyping (GroupId: ID!):String!
-          groupJoined(userId:ID!):Group!
-          messageDeleted(id: ID!):Boolean!
+          newMessage: Message!
+          userTyping:String!
+          groupJoined:Group!
+          messageDeleted:Boolean!
     }
     schema {
         query: RootQuery

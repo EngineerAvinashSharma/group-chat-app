@@ -3,18 +3,18 @@ const Schema = mongoose.Schema;
 
 const groupSchema = new Schema(
   {
-    name:{
+    name: {
       type: String,
       required: true
     },
-    members: {
-      type:[Schema.Types.ObjectId],
-      ref:'User'
-    },
-    message: {
+    members: [{
       type: [Schema.Types.ObjectId],
-      ref:'Message'
-    }
+      ref: 'User'
+    }],
+    message: [{
+      type: [Schema.Types.ObjectId],
+      ref: 'Message'
+    }]
   },
   { timestamps: true }
 );

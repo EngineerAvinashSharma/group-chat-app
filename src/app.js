@@ -20,12 +20,13 @@ const subscriptionEndpoint = `ws://localhost:${process.env.PORT}/subscriptions`;
 app.use(bodyParser.graphql());
 app.use(auth);
 
+
 app.use(
   '/graphql', expressGraphQL({
     schema: graphqlSchema,
     rootValue: graphqlResolver,
     graphiql: true,
-    subscriptionEndpoint,
+    subscriptionEndpoint: subscriptionEndpoint,
     customFormatErrorFn(err) {
       if (!err.originalError) {
         return err;
@@ -38,7 +39,7 @@ app.use(
   }),
 );
 
-app.get('/playground', expressPlayground({
+app.get('/', expressPlayground({
   endpoint: "/graphql"
 }));
 
@@ -64,7 +65,8 @@ webServer.listen(process.env.PORT, () => {
   new SubscriptionServer({
     execute,
     subscribe,
-    schema: graphqlSchema
+    graphqlSchema,
+    onConnect: () => console.log('Client connected')
   }, {
     server: webServer,
     path: '/subscriptions',

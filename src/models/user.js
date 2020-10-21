@@ -14,14 +14,14 @@ const userSchema = new Schema({
     type: String,
     required: true
   },
-  groups:{
+  groups:[{
     type:[Schema.Types.ObjectId],
     ref:'Group'
-  },
-  messages:{
+  }],
+  messages:[{
     type:[Schema.Types.ObjectId],
     ref:'Message'
-  }
+  }]
 },
   { timestamps: true });
 module.exports = mongoose.model('User', userSchema);

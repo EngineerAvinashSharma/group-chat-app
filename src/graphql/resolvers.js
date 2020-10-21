@@ -78,7 +78,12 @@ module.exports = {
       throw err;
     }
     const totalGroups = await Group.find().countDocuments();
-    const groups = await Group.find().limit(limit * 1).skip((page - 1) * limit).exec();
+    const groups = await Group.find()
+      .populate('message')
+      .limit(limit * 1)
+      .skip((page - 1) * limit)
+      .exec();
+    console.log(groups);
     if (groups < 0) {
       const error = new Error('Group already exists!');
       throw error;
@@ -106,7 +111,8 @@ module.exports = {
       const error = new Error('You Are Already in Group!');
       throw error;
     }
-    const updatedGroup = await Group.findOneAndUpdate({ _id: group._id }, { $push: { members: req.userId } });
+    const updatedGroup = await Group.findOneAndUpdate({ _id: group._id }, { $push: { members: req.userId } }).
+      populate('members');
     if (!updatedGroup) {
       const error = new Error('Join Failed');
       throw error;
@@ -118,6 +124,24 @@ module.exports = {
     }
     pubsub.publish("groupJoined", { userId: req.userId, groupId: updatedGroup._id.toString() });
     return { ...updatedGroup._doc, _id: updatedGroup._id.toString(), users: updatedGroup.members, messages: updatedGroup.messages };
+  },
+  group: async function ({ groupId }, req) {
+    if (!req.isAuth) {
+      const err = new Error("Not Authenticated!");
+      err.code = 401;
+      throw err;
+    }
+    const user = await User.findOne({ _id: mongoose.Types.ObjectId(req.userId), groups: { $in: groupId } });
+    if (!user){
+      const err = new Error("Join Group First");
+      err.code = 404;
+      throw err;
+
+    }
+      const group = await Group.findOne({ _id: mongoose.Types.ObjectId(groupId) }).
+        populate('message');
+
+    return { ...group._doc, name: group.name, messages: group.message };
   },
   sendMessage: async function ({ messageInput }, req) {
     if (!req.isAuth) {
@@ -136,11 +160,10 @@ module.exports = {
       groupId: group._id
     });
     const sentMessage = await message.save();
-    const updatedGroup = await Group.updateOne({ _id: sentMessage.groupId }, { $push: { message: sentMessage._id } });
-    const updateUser = await User.updateOne({ _id: sentMessage.sendBy }, { $push: { messages: sentMessage._id } });
+    const updatedGroup = await Group.updateOne({ _id: sentMessage.groupId }, { $push: { message: mongoose.Types.ObjectId(sentMessage._id) } });
+    const updateUser = await User.updateOne({ _id: sentMessage.sendBy }, { $push: { messages: mongoose.Types.ObjectId(sentMessage._id) } });
     pubsub.publish("newMessage", {
-      sendBy: req.userId,
-      groupId: updatedGroup._id
+      newMessage: sentMessage
     });
     return { ...sentMessage._doc, _id: sentMessage._id.toString(), body: sentMessage.body };
   },
@@ -150,33 +173,39 @@ module.exports = {
       err.code = 401;
       throw err;
     }
-    const group = await Group.findOne({ _id: mongoose.Types.ObjectId(groupId) });
+    const group = await Group.findOne({ _id: mongoose.Types.ObjectId(groupId) }).
+      populate('message');
 
-    return { messages: group.message, name: group.name };
+    return { ...group._doc, name: group.name, messages: group.message };
   },
-  messages: async function ({ id }) {
-    const messages = Messages.find({ _id: id });
-    return { messages }
-  },
-  deleteMessage: async function (_, { id }, req) {
+  deleteMessage: async function (_, { id, groupId }, req) {
     if (!req.isAuth) {
       const err = new Error("Not Authenticated!");
       err.code = 401;
       throw err;
     }
-    const message = await Message.findOneAndDelete({ _id: mongoose.Types.ObjectId(id), sendBy: req.userId });
+    const message = await Message.findOneAndDelete({ _id: mongoose.Types.ObjectId(id), sendBy: mongoose.Types.ObjectId(req.userId) });
+    if (Message) {
+      await User.updateOne({ _id: mongoose.Types.ObjectId(req.userId) }, { $pull: { messages: mongoose.Types.ObjectId(message._id) } });
+      await Group.updateOne({ _id: mongoose.Types.ObjectId(groupId) }, { $pull: { message: mongoose.Types.ObjectId(message._id) } });
+    }
     pubsub.publish("messageDeleted", { messageId: message._id });
     return true;
   },
-  userTyping: (_, { groupId }) => {
+  userTyping: (_, { groupId }, req) => {
+    if (!req.isAuth) {
+      const err = new Error("Not Authenticated!");
+      err.code = 401;
+      throw err;
+    }
     pubsub.publish("userTyping", { userTyping: req.userId, groupId: groupId });
     return true;
   },
   newMessage: {
     subscribe: withFilter(
       () => pubsub.asyncIterator("newMessage"),
-      (payload, variables) => {
-        return payload.groupId === variables.groupId;
+      ({ newMessage }, variables) => {
+        return newMessage.groupId === variables.groupId;
       }
     )
   },

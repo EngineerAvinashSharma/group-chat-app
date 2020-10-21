@@ -8,11 +8,13 @@ const messageSchema = new Schema({
     },
     sendBy:{
         type: Schema.Types.ObjectId,
-        required: true
+        required: true,
+        ref:'User'
     },
     groupId: {
         type: Schema.Types.ObjectId,
-        required: true
+        required: true,
+        ref:'Group'
     },
 
 },
